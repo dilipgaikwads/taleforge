@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}Video job {{ job.id }} - VideoFactory{% endblock %}
+{% block head %}{% if working %}<meta http-equiv="refresh" content="6">{% endif %}{% endblock %}
+{% block content %}
+  <h2>Video #{{ job.id }}: {{ topic.title }}</h2>
+  <p class="sub">{{ channel.name }}</p>
+
+  {% if job.status == 'CANCELLED' %}
+    <div class="banner bad">Cancelled.</div>
+  {% elif job.status == 'EXCEPTION' %}
+    <div class="banner bad">Stopped: needs your attention (details below).</div>
+  {% elif job.status == 'RETRYING' %}
+    <div class="banner bad">{{ stage_label }} hit a temporary problem. Retrying automatically
+      (attempt {{ job.retry_count }} of 3) after {{ job.next_attempt_at }} UTC.<br>
+      <span class="detail">Reason: {{ job.last_error }}</span></div>
+  {% elif working %}
+    <div class="banner">Working on: {{ stage_label }}&hellip; This page refreshes by itself.</div>
+  {% elif job.stage == 'PUBLISHED' %}
+    {% for p in posts if p.status == 'published' %}{% if loop.first %}
+      <div class="banner">&#9989; On YouTube ({{ p.privacy|upper }}). <a href="{{ p.url }}" target="_blank" rel="noopener">Open the video</a></div>
+    {% endif %}{% endfor %}
+  {% elif job.stage == 'READY' %}
+    <div class="banner">&#9989; Ready! This video passed quality control{% if qc and qc.approved_by_owner %} (approved by you){% endif %} and is saved on your Mac.</div>
+  {% elif waiting_for_build %}
+    <div class="banner">Done so far. The next stage ({{ stage_label }}) gets built in an upcoming setup step.</div>
+  {% endif %}
+
+  <div class="card">
+    <div class="row">Production line</div>
+    <div class="detail">
+      {% for s in steps %}
+        {% if s.state == 'done' %}&#9989;{% elif s.state == 'current' %}&#9654;&#65039;{% elif s.state == 'skipped' %}&#10134;{% else %}&#9675;{% endif %}
+        {{ s.label }}{% if s.state == 'skipped' %} <i>(skipped: uploaded straight away)</i>{% elif not s.built and s.state != 'done' %} <i>(coming later)</i>{% endif %}<br>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% for p in problems %}
+    <div class="card" style="border-left:6px solid var(--bad)">
+      <div class="row">What happened</div><div class="detail">{{ p.what_happened }}</div>
+      <div class="row" style="margin-top:10px">Why</div><div class="detail">{{ p.why }}</div>
+      <div class="row" style="margin-top:10px">What was tried</div><div class="detail">{{ p.what_was_tried }}</div>
+      <div class="row" style="margin-top:10px">Recommendation</div><div class="detail">{{ p.recommendation }}</div>
+      <div class="row" style="margin-top:10px">Steps</div>
+      <div class="detail" style="white-space:pre-line">{{ p.fix_steps }}</div>
+    </div>
+  {% endfor %}
+
+  {% if video %}
+    <h2>Your video</h2>
+    <div class="card" style="text-align:center">
+      <video controls playsinline preload="metadata" src="/jobs/{{ job.id }}/video/final.mp4"
+             style="width:100%; max-width:340px; aspect-ratio:9/16; background:#000; border-radius:12px"></video>
+      <div class="detail">{{ video.width }}&times;{{ video.height }} &middot; {{ '%.1f'|format(video.duration_sec) }} seconds &middot; MP4</div>
+      <a class="btn secondary" href="/jobs/{{ job.id }}/video/final.mp4" download="video-{{ job.id }}.mp4">Download video</a>
+    </div>
+  {% endif %}
+
+  {% if job.stage == 'READY' %}
+    <h2>Publish</h2>
+    <div class="card">
+      {% if youtube.state == 'connected' %}
+        <div class="detail" style="margin-top:0">YouTube channel: <b>{{ youtube.name }}</b>. The video is uploaded as
+          <b>PRIVATE</b> (only you can see it). Until Google's free API review is done, YouTube keeps
+          uploads from new apps private anyway. You can make it public yourself in YouTube Studio.</div>
+        <form method="post" action="/jobs/{{ job.id }}/publish/youtube"
+              onsubmit="this.querySelector('button').disabled=true;">
+          <button class="btn" type="submit">Upload to YouTube (private)</button></form>
+      {% else %}
+        <div class="detail" style="margin-top:0">YouTube is not connected yet. <a href="/youtube">Open the YouTube page</a>.</div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if posts %}
+    <h2>Platforms</h2>
+    <div class="card">
+      {% for p in posts %}
+        <div class="detail" style="margin-top:{{ '0' if loop.first else '8px' }}">
+          {% if p.status == 'published' %}&#9989;{% elif p.status == 'failed' %}&#10060;{% else %}&#9203;{% endif %}
+          <b>{{ p.platform|capitalize }}</b>: {{ p.status }} ({{ p.privacy }})
+          {% if p.url %} &middot; <a href="{{ p.url }}" target="_blank" rel="noopener">open</a>{% endif %}
+          {% if p.error %}<br><span style="font-size:.85rem">{{ p.error }}</span>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if qc %}
+    <h2>Quality check</h2>
+    <div class="card">
+      {% for c in qc.checks %}
+        <div class="detail" style="margin-top:{{ '0' if loop.first else '8px' }}">
+          {% if c.status == 'pass' %}&#9989;{% elif c.status == 'warn' %}&#9888;&#65039;{% else %}&#10060;{% endif %}
+          <b>{{ c.name }}</b>: {{ c.detail }}
+        </div>
+      {% endfor %}
+      {% if qc.rounds %}<div class="detail">Automatic fix rounds used: {{ qc.rounds }}</div>{% endif %}
+    </div>
+  {% endif %}
+
+  {% if metadata %}
+    <h2>Publishing text</h2>
+    <div class="card">
+      <div class="row">YouTube Shorts</div>
+      <div class="detail"><b>Title:</b> {{ metadata.youtube.title }}</div>
+      <textarea readonly rows="8" style="margin-top:8px; font-size:.85rem">{{ metadata.youtube.description }}</textarea>
+      <div class="row" style="margin-top:14px">Instagram Reels</div>
+      <textarea readonly rows="4" style="margin-top:8px; font-size:.85rem">{{ metadata.instagram.caption }}</textarea>
+      <div class="detail">Tip: press and hold inside a box to select and copy the text.</div>
+    </div>
+  {% endif %}
+
+  {% if voice %}
+    <h2>Narration</h2>
+    <div class="card">
+      <audio controls preload="none" style="width:100%" src="/jobs/{{ job.id }}/audio/voice_preview.m4a"></audio>
+      <div class="detail">{{ '%.0f'|format(voice.seconds) }} seconds &middot; voice: {{ voice.voice }}
+        &middot; {{ voice.model }}</div>
+    </div>
+  {% endif %}
+
+  {% if scenes %}
+    <h2>Scenes ({{ scenes|length }})</h2>
+    {% for sc in scenes %}
+      <div class="card">
+        <div class="spread">
+          <div class="row">Scene {{ sc.scene_number }}</div>
+          <span class="badge">{{ sc.duration_sec }}s &middot; {{ sc.motion.replace('_', ' ') }}</span>
+        </div>
+        <div style="display:flex; gap:12px; margin-top:10px; align-items:flex-start">
+          {% if sc.picture_name %}
+            <a href="/jobs/{{ job.id }}/visual/{{ sc.picture_name }}" target="_blank">
+              <img src="/jobs/{{ job.id }}/visual/{{ sc.picture_name }}" alt="Scene {{ sc.scene_number }} picture"
+                   style="width:96px; aspect-ratio:9/16; object-fit:cover; border-radius:10px; flex:none"></a>
+          {% endif %}
+          <div>
+            <div class="detail" style="margin-top:0">&ldquo;{{ sc.narration }}&rdquo;</div>
+            <div class="detail"><b>Shows:</b> {{ sc.visual_description }}</div>
+            {% if sc.credit %}
+              <div class="detail" style="font-size:.8rem">Credit: <a href="{{ sc.credit_url }}" target="_blank" rel="noopener">{{ sc.credit }}</a></div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {% if script %}
+    <h2>Script</h2>
+    <div class="card">
+      <div class="row">{{ script.title }}</div>
+      <div class="detail">{{ script.word_count }} words &middot; about {{ script.estimated_seconds }} seconds when spoken</div>
+      {% for key in ['hook', 'curiosity', 'context', 'story', 'revelation', 'payoff', 'cta'] %}
+        {% if script.sections[key] %}
+          <div class="detail" style="margin-top:10px"><b>{{ key|upper }}</b><br>{{ script.sections[key] }}</div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if facts %}
+    {% if facts_checked %}
+      <h2>Facts ({{ verified_count }} confirmed of {{ facts|length }})</h2>
+    {% else %}
+      <h2>Facts found ({{ facts|length }}), waiting for fact-check</h2>
+    {% endif %}
+    <div class="card">
+      {% for f in facts %}
+        <div class="detail" style="margin-top:{{ '0' if loop.first else '10px' }}">
+          {% if not facts_checked %}&#9203;{% elif f.verified %}&#9989;{% else %}&#10060;{% endif %}
+          {% if f.claim_type in ('disputed', 'legend') %}<span class="badge">{{ f.claim_type|upper }}</span>{% endif %}
+          {{ f.claim }}
+          <br><span style="font-size:.8rem">Source: <a href="{{ f.source_url }}" target="_blank" rel="noopener">{{ f.source_title }}</a>
+          {% if facts_checked and not f.verified %} &middot; not confirmed, will not be used{% endif %}</span>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if sources %}
+    <h2>Sources</h2>
+    <div class="card">
+      {% for s in sources %}
+        <div class="detail">{{ s.n }}. <a href="{{ s.url }}" target="_blank" rel="noopener">{{ s.title }}</a> (Wikipedia)</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if job.status == 'EXCEPTION' and job.stage == 'QUALITY_CHECK' and video %}
+    <form method="post" action="/jobs/{{ job.id }}/approve"
+          onsubmit="return confirm('Approve this video even though the quality check found problems?');">
+      <button class="btn" type="submit">Approve anyway</button></form>
+  {% endif %}
+  {% if job.status in ('EXCEPTION', 'CANCELLED') and job.stage in built_stages %}
+    <form method="post" action="/jobs/{{ job.id }}/retry"><button class="btn" type="submit">Retry</button></form>
+  {% endif %}
+  {% if job.status not in ('CANCELLED', 'PUBLISHED', 'READY') and job.stage != 'PUBLISHED' %}
+    <form method="post" action="/jobs/{{ job.id }}/cancel"
+          onsubmit="return confirm('Cancel this video job?');">
+      <button class="btn secondary" type="submit">Cancel this job</button></form>
+  {% endif %}
+  <a class="btn secondary" href="/">Back to dashboard</a>
+{% endblock %}

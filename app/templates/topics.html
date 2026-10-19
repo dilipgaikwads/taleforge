@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Topics - {{ channel.name }} - VideoFactory{% endblock %}
+{% block content %}
+  <h2>Topics: {{ channel.name }}</h2>
+  <p class="sub">{{ channel.niche }}</p>
+
+  <form method="post" action="/channels/{{ channel.id }}/topics/discover"
+        onsubmit="var b=this.querySelector('button'); b.disabled=true; b.textContent='The AI is researching ideas\u2026 (about 20\u201360 seconds)';">
+    <button class="btn" type="submit">Find new topic ideas</button>
+  </form>
+  <p class="foot">Each tap uses 1 free AI request and adds about 8 scored ideas.</p>
+
+  {% if not topics %}
+    <div class="card">
+      <div class="row">No topic ideas yet</div>
+      <div class="detail">Tap the button above. The AI will suggest ideas, score them,
+        and the factory will check them against past topics to avoid repeats.</div>
+    </div>
+  {% endif %}
+
+  {% for t in topics %}
+    <div class="card">
+      <div class="spread">
+        <div class="row">{{ t.title }}</div>
+        <span class="badge">{{ '%.0f'|format(t.score or 0) }}/100</span>
+      </div>
+      <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px">
+        {% if t.status == 'selected' %}<span class="badge" style="color:var(--ok)">SELECTED</span>{% endif %}
+        {% if t.status == 'used' %}<span class="badge">USED</span>{% endif %}
+        {% if t.is_best and t.status == 'candidate' %}<span class="badge" style="color:var(--accent)">BEST PICK</span>{% endif %}
+        {% if t.evidence_label %}<span class="badge"
+              style="color:{{ 'var(--ok)' if t.details.evidence == 'well_documented' else 'var(--warn)' }}">{{ t.evidence_label }}</span>{% endif %}
+        {% if t.details.low_factual_confidence %}<span class="badge" style="color:var(--bad)">WEAK SOURCES</span>{% endif %}
+        {% if t.details.similar_to %}<span class="badge" style="color:var(--warn)">SIMILAR TO AN EARLIER TOPIC</span>{% endif %}
+      </div>
+      <div class="detail">{{ t.summary }}</div>
+      {% if t.details.angle %}<div class="detail"><b>Hook idea:</b> {{ t.details.angle }}</div>{% endif %}
+
+      <details class="detail" style="margin-top:8px">
+        <summary>Score details</summary>
+        <div style="margin-top:6px">
+          {% for name in criteria %}
+            {{ name.replace('_', ' ') }}: {{ t.details.scores[name] if t.details.scores else '?' }}/10<br>
+          {% endfor %}
+          Base score: {{ t.details.base_score }} &middot; Repeat penalty: -{{ t.details.duplicate_penalty }}<br>
+          {% if t.details.similar_to %}Most similar earlier topic: &ldquo;{{ t.details.similar_to }}&rdquo;
+            ({{ '%.0f'|format((t.details.similarity or 0) * 100) }}% similar; {{ block_similarity }}%+ counts as a duplicate)<br>{% endif %}
+          <i>Note: "low competition" is the AI's estimate. Real YouTube data comes later.</i>
+        </div>
+      </details>
+
+      {% if t.status in ('candidate', 'selected') %}
+        <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap">
+          {% if t.status == 'candidate' %}
+            <form method="post" action="/topics/{{ t.id }}/select">
+              <button class="btn small" type="submit">Use this topic</button></form>
+          {% else %}
+            <form method="post" action="/topics/{{ t.id }}/start"
+                  onsubmit="this.querySelector('button').disabled=true;">
+              <button class="btn small" type="submit">Start video</button></form>
+          {% endif %}
+          <form method="post" action="/topics/{{ t.id }}/reject">
+            <button class="btn secondary small" type="submit">Reject</button></form>
+        </div>
+      {% endif %}
+    </div>
+  {% endfor %}
+
+  {% if hidden %}
+    <p class="foot">{{ hidden }} rejected or duplicate idea(s) hidden. They are still remembered so the AI won't suggest them again.</p>
+  {% endif %}
+  <a class="btn secondary" href="/">Back to dashboard</a>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}System check - VideoFactory{% endblock %}
+{% block content %}
+  <h2>System check</h2>
+  <p class="sub">Real results from your Mac</p>
+  {% if failures == 0 %}
+    <div class="banner">All {{ checks|length }} checks passed.</div>
+  {% else %}
+    <div class="banner bad">{{ failures }} check(s) need attention.</div>
+  {% endif %}
+  {% for c in checks %}
+    <div class="card">
+      <div class="row"><span class="dot {{ '' if c.ok else 'bad' }}"></span>{{ c.name }}</div>
+      <div class="detail">{{ c.detail }}</div>
+    </div>
+  {% endfor %}
+  <form method="post" action="/test-ai"
+        onsubmit="var b=this.querySelector('button'); b.disabled=true; b.textContent='Asking the AI\u2026 please wait';">
+    <button class="btn" type="submit">Test AI connection</button>
+  </form>
+  <a class="btn secondary" href="/system">Run checks again</a>
+  <a class="btn secondary" href="/">Back to dashboard</a>
+  <p class="foot">Checked at {{ checked_at }}</p>
+{% endblock %}

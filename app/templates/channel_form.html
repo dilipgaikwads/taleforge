@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}{{ 'New channel' if mode == 'new' else 'Edit channel' }} - VideoFactory{% endblock %}
+{% block content %}
+  <h2>{{ 'Create a channel' if mode == 'new' else 'Edit channel' }}</h2>
+  <p class="sub">Only the name and niche are required. Everything else can be changed later.</p>
+
+  <form method="post" class="card"
+        action="{{ '/channels/new' if mode == 'new' else '/channels/' ~ channel.id ~ '/edit' }}">
+
+    <label for="name">Channel name *
+      <span class="hint">For you to recognise it, e.g. "Lost Histories"</span></label>
+    <input id="name" name="name" maxlength="60" required value="{{ channel.name or '' }}">
+
+    <label for="niche">Niche: what are the videos about? *
+      <span class="hint">Be specific, e.g. "Little-known true stories from ancient civilisations"</span></label>
+    <textarea id="niche" name="niche" maxlength="300" required>{{ channel.niche or '' }}</textarea>
+
+    <label for="audience">Audience
+      <span class="hint">e.g. "Curious adults who enjoy history and mysteries"</span></label>
+    <textarea id="audience" name="audience" maxlength="300">{{ channel.audience or '' }}</textarea>
+
+    <label for="language">Language</label>
+    <input id="language" name="language" maxlength="40" value="{{ channel.language or 'English' }}">
+
+    <label for="voice">Narrator voice
+      <span class="hint">Google's free AI voices. You can change this any time; it applies to new videos.</span></label>
+    <select id="voice" name="voice">
+      {% for name, character in voices.items() %}
+        <option value="{{ name }}" {{ 'selected' if (channel.voice or default_voice) == name else '' }}>{{ name }} ({{ character }})</option>
+      {% endfor %}
+    </select>
+
+    <label for="visual_style">Visual style
+      <span class="hint">e.g. "Cinematic, realistic, warm torch-lit colours"</span></label>
+    <textarea id="visual_style" name="visual_style" maxlength="300">{{ channel.visual_style or '' }}</textarea>
+
+    <label for="content_rules">Content rules
+      <span class="hint">Things the AI must always or never do, e.g. "No gore. Always say clearly when something is a legend, not a fact."</span></label>
+    <textarea id="content_rules" name="content_rules" maxlength="1000">{{ channel.content_rules or '' }}</textarea>
+
+    <label for="videos_per_day">Videos per day (1 to 10)
+      <span class="hint">Start with 1. The free AI tier has daily limits.</span></label>
+    <input id="videos_per_day" name="videos_per_day" type="number" min="1" max="10" inputmode="numeric"
+           value="{{ channel.videos_per_day or 1 }}">
+
+    <label for="timezone">Time zone
+      <span class="hint">Filled in automatically from your Mac. Used for posting times later.</span></label>
+    <input id="timezone" name="timezone" maxlength="64" value="{{ channel.timezone or 'UTC' }}">
+
+    <button class="btn" type="submit">Save channel</button>
+  </form>
+  <a class="btn secondary" href="/">Cancel</a>
+{% endblock %}

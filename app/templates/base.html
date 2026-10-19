@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{% block title %}VideoFactory{% endblock %}</title>
+{% block head %}{% endblock %}
+<style>
+  :root { --bg:#f4f5f7; --card:#ffffff; --text:#16181d; --muted:#5d6470; --field:#f0f2f6;
+          --ok:#14804a; --bad:#c62828; --warn:#b26a00; --accent:#2f5bea;
+          --accent2:#e6e9f2; --accent2text:#16181d; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0f1115; --card:#1a1d24; --text:#eceef2; --muted:#9aa1ad; --field:#262a33;
+            --ok:#3ecf7f; --bad:#ff6b6b; --warn:#ffb648; --accent:#6f8cff;
+            --accent2:#262a33; --accent2text:#eceef2; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:-apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
+         background:var(--bg); color:var(--text); line-height:1.4;
+         padding: max(16px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom)); }
+  main { max-width: 640px; margin: 0 auto; }
+  .top { display:flex; align-items:center; justify-content:space-between; margin: 4px 0 16px; }
+  .brand { font-size:1.4rem; font-weight:700; color:var(--text); text-decoration:none; }
+  .link { background:none; border:0; color:var(--muted); font:inherit; cursor:pointer; padding:8px 0; }
+  h2 { font-size:1.1rem; margin: 22px 0 10px; }
+  .sub { color: var(--muted); margin: 0 0 16px; font-size: .95rem; }
+  .card { background: var(--card); border-radius: 14px; padding: 14px 16px; margin-bottom: 10px; }
+  .row { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+  .spread { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; flex: none; background: var(--ok); }
+  .dot.bad { background: var(--bad); }
+  .detail { color: var(--muted); font-size: .9rem; margin-top: 6px; word-break: break-word; }
+  .badge { font-size:.75rem; font-weight:700; padding:4px 8px; border-radius:999px;
+           background:var(--field); color:var(--warn); white-space:nowrap; }
+  .banner { padding: 14px 16px; border-radius: 14px; font-weight: 600; margin-bottom: 12px;
+            background: var(--card); border-left: 6px solid var(--ok); }
+  .banner.bad { border-left-color: var(--bad); }
+  .btn { display: block; width: 100%; text-align: center; margin-top: 12px; padding: 14px;
+         border: 0; border-radius: 12px; font: inherit; font-weight: 600; cursor: pointer;
+         background: var(--accent); color: #fff; text-decoration: none; }
+  .btn.secondary { background: var(--accent2); color: var(--accent2text); }
+  .btn.small { display:inline-block; width:auto; margin:0; padding:8px 14px; font-size:.9rem; }
+  .btn:disabled { opacity: .6; }
+  form { margin: 0; }
+  label { display:block; font-weight:600; margin: 16px 0 6px; }
+  .hint { display:block; color:var(--muted); font-size:.85rem; font-weight:400; margin-top:2px; }
+  input, textarea, select { width:100%; padding:12px; border-radius:12px; border:1px solid transparent;
+         background:var(--field); color:var(--text); font:inherit; font-size:1rem; }
+  textarea { min-height: 84px; resize: vertical; }
+  input:focus, textarea:focus { outline: 2px solid var(--accent); }
+  a { color: var(--accent); }
+  .foot { color: var(--muted); font-size: .8rem; text-align: center; margin-top: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <a class="brand" href="/">VideoFactory</a>
+    <form method="post" action="/logout"><button class="link" type="submit">Log out</button></form>
+  </header>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="banner {{ 'bad' if category == 'bad' else '' }}">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

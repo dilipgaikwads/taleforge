@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2>Channels</h2>
+  {% if not channels %}
+    <div class="card">
+      <div class="row">No channels yet</div>
+      <div class="detail">A channel tells the factory what kind of videos to make:
+        the topic area, the audience, the style and the rules.</div>
+    </div>
+  {% endif %}
+
+  {% for ch in channels %}
+    <div class="card">
+      <div class="spread">
+        <div class="row">{{ ch.name }}</div>
+        <span class="badge">{{ 'PAUSED' if ch.is_paused else 'ACTIVE' }}</span>
+      </div>
+      <div class="detail">{{ ch.niche }}</div>
+      <div class="detail">
+        {{ ch.language }} &middot; {{ ch.videos_per_day }} video{{ '' if ch.videos_per_day == 1 else 's' }}/day
+        &middot; {{ ch.timezone }}
+      </div>
+      <div class="detail">
+        {% if ch.selected_topic %}Next topic: <b>{{ ch.selected_topic }}</b>
+        {% else %}{{ ch.idea_count }} topic idea{{ '' if ch.idea_count == 1 else 's' }} waiting{% endif %}
+      </div>
+      <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap">
+        <a class="btn small" href="/channels/{{ ch.id }}/topics">Topics</a>
+        <a class="btn secondary small" href="/channels/{{ ch.id }}/edit">Edit</a>
+      </div>
+    </div>
+  {% endfor %}
+
+  <a class="btn" href="/channels/new">+ Create channel</a>
+  {% if channels %}
+    <p class="foot">Channels stay paused until the automatic pipeline is built in a later step.</p>
+  {% endif %}
+
+  <h2>Videos in progress</h2>
+  {% if not jobs %}
+    <div class="card"><div class="detail">No videos yet. Open a channel's Topics, choose a topic, and tap Start video.</div></div>
+  {% endif %}
+  {% for j in jobs %}
+    <a href="/jobs/{{ j.id }}" style="text-decoration:none; color:inherit">
+      <div class="card">
+        <div class="spread">
+          <div class="row">#{{ j.id }} {{ j.topic_title or '(no topic)' }}</div>
+          <span class="badge" style="color:{{ 'var(--bad)' if j.status in ('EXCEPTION','RETRYING') else 'var(--warn)' }}">{{ j.status_label }}</span>
+        </div>
+        <div class="detail">{{ j.channel_name }} &middot; started {{ j.created_at }} UTC</div>
+      </div>
+    </a>
+  {% endfor %}
+
+  <h2>Social accounts</h2>
+  <a href="/youtube" style="text-decoration:none; color:inherit">
+    <div class="card" {% if youtube.state == 'needs_reconnect' or youtube.reconnect_soon %}style="border-left:6px solid var(--bad)"{% endif %}>
+      <div class="spread">
+        <div class="row">YouTube</div>
+        <span class="badge" style="color:{{ 'var(--ok)' if youtube.state == 'connected' and not youtube.reconnect_soon else 'var(--bad)' }}">
+          {% if youtube.state == 'connected' %}{{ 'RECONNECT SOON' if youtube.reconnect_soon else 'CONNECTED' }}
+          {% elif youtube.state == 'needs_reconnect' %}RECONNECT NEEDED
+          {% elif youtube.state == 'not_set_up' %}NOT SET UP{% else %}NOT CONNECTED{% endif %}</span>
+      </div>
+      <div class="detail">{{ youtube.name if youtube.name else 'Tap to set up' }}</div>
+    </div>
+  </a>
+
+  <h2>System</h2>
+  <div class="card">
+    <div class="row">Health checks</div>
+    <div class="detail">Python, FFmpeg, captions, database, AI brain and disk space.</div>
+    <a class="btn secondary" href="/system">Open system check</a>
+  </div>
+{% endblock %}

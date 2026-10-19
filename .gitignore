@@ -1,0 +1,20 @@
+# ---- Secrets: never upload ----
+.env
+secrets/
+# ---- Your own data: database, videos, logs, caches ----
+data/
+# ---- Installed tools (re-created by the setup scripts) ----
+venv/
+bin/*
+!bin/.gitkeep
+# ---- Experimental tool outputs ----
+tools/storybook-animation-test/frames/
+tools/storybook-animation-test/Rhubarb-Lip-Sync-*/
+tools/storybook-animation-test/*.wav
+tools/storybook-animation-test/mouth.json
+tools/storybook-animation-test/test.mp4
+# ---- Temporary files ----
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

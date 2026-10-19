@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}YouTube - VideoFactory{% endblock %}
+{% block content %}
+  <h2>YouTube</h2>
+
+  {% if yt.state == 'not_set_up' %}
+    <div class="card">
+      <div class="row">Not set up yet</div>
+      <div class="detail">The YouTube client file is missing. Do Step 21 on the Mac first.</div>
+    </div>
+
+  {% elif yt.state in ('connected', 'needs_reconnect') %}
+    <div class="card" style="border-left:6px solid {{ 'var(--ok)' if yt.state == 'connected' and not yt.reconnect_soon else 'var(--bad)' }}">
+      <div class="spread">
+        <div class="row">{{ yt.name }}</div>
+        <span class="badge" style="color:{{ 'var(--ok)' if yt.state == 'connected' else 'var(--bad)' }}">
+          {{ 'CONNECTED' if yt.state == 'connected' else 'RECONNECT NEEDED' }}</span>
+      </div>
+      <div class="detail">Channel ID: {{ yt.channel_id }}</div>
+      <div class="detail">Connected {{ yt.connected_at }} UTC ({{ yt.age_days }} days ago)</div>
+      {% if yt.state == 'needs_reconnect' %}
+        <div class="detail"><b>Google ended the connection.</b> Uploads are paused until you reconnect on the Mac.</div>
+      {% elif yt.reconnect_soon %}
+        <div class="detail"><b>Reconnect soon:</b> while your Google app is in Testing mode, Google ends the
+          connection 7 days after connecting. Reconnect on the Mac to restart the 7 days.</div>
+      {% else %}
+        <div class="detail">While your Google app is in Testing mode, Google ends this connection after 7 days.
+          The dashboard will remind you a day before.</div>
+      {% endif %}
+    </div>
+  {% else %}
+    <div class="card">
+      <div class="row">Not connected</div>
+      <div class="detail">Connect your channel once, on the Mac. After that the factory can upload,
+        and you control everything from your phone.</div>
+    </div>
+  {% endif %}
+
+  {% if yt.state != 'not_set_up' %}
+    {% if on_mac %}
+      <form method="post" action="/youtube/connect">
+        <button class="btn" type="submit">{{ 'Reconnect YouTube' if yt.state in ('connected', 'needs_reconnect') else 'Connect YouTube' }}</button>
+      </form>
+      <p class="foot">Google will show "Google hasn't verified this app". That is expected for your own
+        personal app: tap Advanced, then Go to VideoFactory, and tick every permission box.</p>
+    {% else %}
+      <div class="card">
+        <div class="detail"><b>To connect or reconnect:</b> on the Mac, open
+          <code>http://127.0.0.1:8000/youtube</code> in Chrome and tap the button there.
+          (Google only returns the approval to the Mac itself.)</div>
+      </div>
+    {% endif %}
+    {% if yt.state in ('connected', 'needs_reconnect') %}
+      <form method="post" action="/youtube/disconnect" onsubmit="return confirm('Disconnect YouTube?');">
+        <button class="btn secondary" type="submit">Disconnect</button>
+      </form>
+    {% endif %}
+  {% endif %}
+
+  <a class="btn secondary" href="/">Back to dashboard</a>
+{% endblock %}
