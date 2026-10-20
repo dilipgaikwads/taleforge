@@ -13,6 +13,12 @@ tools/storybook-animation-test/Rhubarb-Lip-Sync-*/
 tools/storybook-animation-test/*.wav
 tools/storybook-animation-test/mouth.json
 tools/storybook-animation-test/test.mp4
+# ---- Local toolchain artifacts (kokoro, whisper, remotion out) ----
+.kokoro-assets/
+.venv-kokoro/
+models/
+tools/whisper.cpp/
+out/
 # ---- Temporary files ----
 __pycache__/
 *.pyc
